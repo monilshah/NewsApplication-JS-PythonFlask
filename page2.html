@@ -1,0 +1,728 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>HomeWork6</title>
+  <link rel="stylesheet" type="text/css" href="/static/style.css">
+
+
+  <!-- Load d3.js -->
+  <script src="https://d3js.org/d3.v4.js"></script>
+
+  <!-- Load d3-cloud -->
+  <script src="https://cdn.jsdelivr.net/gh/holtzy/D3-graph-gallery@master/LIB/d3.layout.cloud.js"></script>
+
+  <!-- Create a div where the graph will take place -->
+</head>
+<body>
+<!--
+Main page div class
+-->
+<div id="homePage" style="width: 1200px;height:auto;padding-left: 141px;position: relative;">
+
+  <div id="bothButtons" class="tab1" style="float: left;border-radius: 4px;border: 1px black;position: fixed;">
+    <button  id="googleButton" class ="toggle" onclick="onClickGoogle();" style="top: 0;position: -webkit-sticky;position: sticky;">Google News</button>
+    <button  id="searchButton" class = "notSelected" onclick="onClickSearch();"style="top: 0;position: -webkit-sticky;position: sticky;">Search</button>        
+  </div>
+
+
+
+  <div id="googleNewsPage" style="width: 1000px;margin-left: 200px; position: relative;">
+    <div id='g1' style='height: 300px;width: 800px;'> 
+      <div id='carouselImage' style="width: 486px;height: 300px;float: left;">
+
+      </div>
+
+      <div id='wordImage' style='width: 400px;height: 400px;margin-left: 495px;'>
+      </div>
+
+      <div id='g2' style='position:absolute; top:300px;height: 100px;width: 860px;'>
+        <h3 style='text-align: center;'>CNN</h3><hr style='border-top: 1px dashed black;'>
+      </div>
+
+      <div id='g3' style='height: 300px;width: 1000px;position:absolute; top:370px;'>
+
+
+      </div>
+
+      <div id='g4' style='height: 100px;width: 860px;position:absolute; top:770px;'>
+        <h3 style='text-align: center;'>Fox News</h3><hr style='border-top: 1px dashed black;'>
+      </div>
+
+      <div id='g5' style='height: 300px;width: 1000px;position:absolute; top:845px;margin-left: -54px;'>
+
+      </div>
+
+
+    </div><!-- g1 div close-->
+
+  </div><!-- end of google news page -->
+  <!-- search Form html start -->
+  <div id="formPage" style="width: 850px;margin-left: 300px; display: none;text-align: center;">
+
+    <div id = 'searchForm' style='background-color: #f4f3f4;width: 750px;height: 150px;margin-bottom: 20px;margin-left: -70px;'>  
+
+      <form id='myForm' method='GET' onsubmit="return false" onreset="return false">
+
+       <br><span>Keyword <span style='color: red'>*</span>
+       <input type='text' id='Keyword' required style='margin-left:20px;'>
+
+       <span style='margin-left:20px;'>From<span style='color: red'>*</span>
+       <input id="From" onchange="return checkDate();" required class="datepicker-input" type="date" data-date-format="yyyy-mm-dd" style='margin-left:20px;'>
+       <!--<input type='date' id='From' required style='margin-left:20px;'>-->
+
+       <span style='margin-left:20px;'>To<span style='color: red'>*</span>
+       <!-- <input type='date' id='To' required style='margin-left:20px;'>-->
+       <input id="To" onchange="return checkDate();" required class="datepicker-input" type="date" data-date-format="yyyy-mm-dd" style='margin-left:20px;'>
+       <br><br>
+
+
+       <span>Category</span>
+       <select id ='Category' onchange="sourceData();" style='margin-left:20px;'>
+        <option value='all'>All</option> 
+        <option value='business'>Business</option> 
+        <option value='entertainment'>Entertainment</option> 
+        <option value='general'>General</option>
+        <option value='health'>Health</option>
+        <option value='science'>Science</option>
+        <option value='sports'>Sports</option>
+        <option value='technology'>Technology</option>
+      </select> 
+
+      <span style='margin-left:20px;'>Source</span>
+      <select id='Source' style='margin-left:20px;'>
+
+
+      </select>
+      <br><br>          
+      <input type='submit' value='Search' onclick="return loadXMLDoc(event);" style='background-color:#f4f3f4;'>
+      <input type='button' onclick='clearData();' value='Clear' style='margin-left:20px;background-color:#f4f3f4;'>
+    </form>
+
+  </div><!--end of searchForm -->
+
+  <div id="searchResults" style="width: 700px;border-radius: 4px;display: block;transition: .5s;text-align: start;margin-left: -42px;">
+
+
+  </div> 
+
+
+</div><!-- end of formPage -->
+
+</div><!-- home page ends -->
+
+<script>
+slidingWindowImages();
+      loadWordCloud();
+      cnnNewsCards();
+      foxNewsCards();
+
+function fromDefault() {
+	var date = new Date();
+	date.setDate(date.getDate()-7);
+
+  document.getElementById("From").valueAsDate = date;
+}
+
+function toDefault() {
+ 
+  document.getElementById('To').valueAsDate = new Date();
+}
+
+function maximizeCard(i){
+  var tempVar =i+999;
+  console.log(i);
+  console.log(tempVar);
+  document.getElementById(i).style.display="none";
+  document.getElementById(tempVar).style.display="block";
+}
+
+function minimizeCard(i) {
+
+var idx =i+999;
+document.getElementById(idx).style.display="none";
+  document.getElementById(i).style.display="block";
+
+  // body...
+}
+
+function shortenString(str, maxLen, separator = ' ') {
+  if (str.length <= maxLen) return str;
+  return str.substr(0, str.lastIndexOf(separator, maxLen));
+}
+
+function dateTruncate(str) { 
+  
+    var array = str.split("-",3); 
+    var strReturn ="";
+    strReturn+=array[1]+"/";
+    strReturn+=array[2].split("T",1)+"/";
+    strReturn+=array[0];
+
+    return strReturn;  
+} 
+
+  function loadXMLDoc(event)
+  {
+  	event.preventDefault();
+
+    var req = new XMLHttpRequest()
+    req.onreadystatechange = function()
+    {	
+    	
+      	if(req.status==200 && req.readyState == 4 )
+      {
+        var jsonObj = JSON.parse(req.responseText);
+        if(jsonObj.status=="error")
+        	alert(jsonObj.err)
+        else{
+        	document.getElementById("searchResults").style.display="block";
+        	var cardObj = jsonObj.all_articles.articles;
+
+            text_Search_Cards = "";
+            extra_Cards = "";
+
+              var count =0;
+              var extraCount = 0;
+              if(cardObj.length==0){
+
+              	text_Search_Cards+="<div style='text-align:center;'>No results</div>";
+
+              }
+
+              else{
+
+		              	for(var i=0; i<cardObj.length;i++)
+		              	{
+				              temp=i+999;
+
+				              console.log("img url" + i +"  "+cardObj[i].urlToImage)
+				              console.log("author" + i +"  "+cardObj[i].author);
+
+				              if(cardObj[i].urlToImage!=null && cardObj[i].author!=null && cardObj[i].title!=null && cardObj[i].description!=null && cardObj[i].publishedAt!=null && cardObj[i].source.name!=null && cardObj[i].url!=null && cardObj[i].urlToImage!="null" && cardObj[i].author!="null" && cardObj[i].title!="null" && cardObj[i].description!="null" && cardObj[i].publishedAt!="null" && cardObj[i].source.name!="null" && cardObj[i].url!="null" && cardObj[i].urlToImage!=0 && cardObj[i].author!=0 && cardObj[i].title!=0 && cardObj[i].description!=0 && cardObj[i].publishedAt!=0 && cardObj[i].source.name!=0 && cardObj[i].url!=0 && cardObj[i].urlToImage!=undefined && cardObj[i].author!=undefined && cardObj[i].title!=undefined && cardObj[i].description!=undefined && cardObj[i].publishedAt!=undefined && cardObj[i].source.name!=undefined && cardObj[i].url!=undefined )
+				              {
+				               
+					               if(count<5){
+					               	
+					               	
+					               	text_Search_Cards+=
+					               	"<div id='news'>"+
+					               "<div id="+i+" onclick='maximizeCard("+i+");' class='row' style='background-color: #f4f3f4;margin-bottom: 8px;'>"+
+															  "<div class='column left'>"+
+															    "<img src='"+ cardObj[i].urlToImage +"' alt='nature' style='height: 100px;width: 100px;object-fit: cover;''></img>"+
+															  "</div>"+
+															  "<div class='column right'>"+
+															    "<h3 style='padding-left: 0;margin: 0;text-align:start;'>"+cardObj[i].title +"</h3>"+
+					               					"<p style='padding-left: 0;text-align:start;'>"+shortenString(cardObj[i].description,70,' ')+"..."+"</p>"+
+															  "</div>"+
+															"</div></div>"+
+
+															"<div id="+temp+"  class='row' style='display:none;background-color: #f4f3f4;margin-bottom: 8px;'>"+
+															  "<div class='column left'>"+
+															    "<img src='"+ cardObj[i].urlToImage +"' alt='nature' style='height: 100px;width: 100px;object-fit: cover;''></img>"+
+															  "</div>"+
+															  "<div class='column right'>"+
+															  	"<div  id='i' onclick='minimizeCard("+i+");' style='float:right;color: indigo; cursor: pointer;'>x</div>"+
+															    "<h3 style='padding-left: 0;margin: 0;text-align:start;'>"+cardObj[i].title +"</h3>"+
+								               	 	"<p style='padding-left: 0;text-align:start;'><b>Author:</b> "+cardObj[i].author+"</p>"+
+								               	 	"<p style='padding-left: 0;text-align:start;'><b>Source:</b> "+cardObj[i].source.name+"</p>"+
+								               	 	"<p style='padding-left: 0;text-align:start;'><b>Date:</b> "+dateTruncate(cardObj[i].publishedAt)+"</p>"+
+								               	 	"<p style='padding-left: 0;text-align:start;'>"+cardObj[i].description+"</p>"+
+								               	 	"<a href='"+ cardObj[i].url + "'target='_blank' style='padding-left: 0;text-align:start;'>See original post</a>"+
+															  "</div>"+
+															"</div></div>";
+
+					               count++;
+					             	}
+					             else{	
+					             				
+									             if(extraCount<10){
+					             					console.log("Extra");
+									             	extra_Cards+=
+										               	"<div id='news'>"+
+										               "<div id="+i+" onclick='maximizeCard("+i+");' class='row' style='background-color: #f4f3f4;margin-bottom: 8px;'>"+
+																	  "<div class='column left'>"+
+																	    "<img src='"+ cardObj[i].urlToImage +"' alt='nature' style='height: 100px;width: 100px;object-fit: cover;''></img>"+
+																	  "</div>"+
+																	  "<div class='column right'>"+
+																	    "<h3 style='padding-left: 0;margin: 0;text-align:start;'>"+cardObj[i].title +"</h3>"+
+							               					"<p style='padding-left: 0;text-align:start;'>"+shortenString(cardObj[i].description,70,' ')+"..."+"</p>"+
+																	  "</div>"+
+																	"</div></div>"+
+
+																	"<div id="+temp+"  class='row' style='display:none;background-color: #f4f3f4;margin-bottom: 8px;'>"+
+																	  "<div class='column left'>"+
+																	    "<img src='"+ cardObj[i].urlToImage +"' alt='nature' style='height: 100px;width: 100px;object-fit: cover;''></img>"+
+																	  "</div>"+
+																	  "<div class='column right'>"+
+																	  	"<div  id='i' onclick='minimizeCard("+i+");' style='float:right;color: indigo; cursor: pointer;'>x</div>"+
+																	    "<h3 style='padding-left: 0;margin: 0;text-align:start;'>"+cardObj[i].title +"</h3>"+
+										               	 	"<p style='padding-left: 0;text-align:start;'><b>Author:</b> "+cardObj[i].author+"</p>"+
+										               	 	"<p style='padding-left: 0;text-align:start;'><b>Source:</b> "+cardObj[i].source.name+"</p>"+
+										               	 	"<p style='padding-left: 0;text-align:start;'><b>Date:</b> "+dateTruncate(cardObj[i].publishedAt)+"</p>"+
+										               	 	"<p style='padding-left: 0;text-align:start;'>"+cardObj[i].description+"</p>"+
+										               	 	"<a href='"+ cardObj[i].url + "'target='_blank' style='padding-left: 0;text-align:start;'>See original post</a>"+
+																	  "</div>"+
+																	"</div></div>";
+									               extraCount++;
+
+					             				}	
+
+
+						             		}
+				             		}
+				             }//end of for
+				             if(count==5){
+				             	console.log("count is "+count);
+				             	text_Search_Cards += "<button  id='showMore' onclick='extraSearchCards();' style='margin-left: 300px;height: 32px;border: white;width: 88px;'>Show More</button>";
+				             }
+				              
+
+
+
+              }// end of else
+            
+              document.getElementById("searchResults").innerHTML = text_Search_Cards;
+
+
+
+           
+
+
+        	}
+        
+          }//end of if()
+
+        }//endof req.onready
+
+
+
+
+        var keyword = document.getElementById('Keyword').value
+        if(keyword.length == 0){
+
+        	alert("Keyword empty");
+     		return;
+        }
+        console.log("keyword sent to py is "+keyword)
+        var fromDate = document.getElementById('From').value
+        var toDate = document.getElementById('To').value
+        var category = document.getElementById('Category').value
+        var source = document.getElementById('Source').value
+        if(source=="all")
+        	source = null;
+        console.log('Source sent to py is' + source)
+
+        req.open('GET', '/query?keyword='+keyword+'&fromDate='+fromDate+'&toDate='+toDate+'&category='+category+'&source='+source)
+        req.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+        
+
+        
+        // var postVars = 
+        req.send()
+      
+      
+}//end of loadXML()
+
+
+function extraSearchCards(){
+
+let all_Cards = text_Search_Cards + extra_Cards + "<button  id='showLess' onclick='showLessCards();' style='margin-left: 300px;height: 32px;border: white;width: 88px;'>Show Less</button>";
+document.getElementById("searchResults").innerHTML = all_Cards;
+document.getElementById("showMore").style.display = "none";
+}// end of extraSearchCards)
+
+function showLessCards(){
+
+	document.getElementById("searchResults").innerHTML = text_Search_Cards;
+	document.getElementById("showMore").style.display = "block";
+	let lessbtn = document.getElementById("showLess");
+	//.parentNode.removeChild(lessbtn);
+}
+
+
+      function sourceData(){
+
+        var req = new XMLHttpRequest()
+        req.onreadystatechange = function()
+        {
+          if(req.status==200 && req.readyState == 4 )
+          {
+            var jsonObj = JSON.parse(req.responseText);
+
+            var sourceObj = jsonObj.source_articles.sources;
+
+            console.log( "source name recieved from py  is "+sourceObj[0].name);
+            text_source="";
+
+
+            var index = Math.min(sourceObj.length,10);
+            for(var i=0; i<index; i++){
+
+              text_source += "<option value='" + sourceObj[i].id+ "'>"+ sourceObj[i].name +"</option>";
+
+            }
+
+            text_source = "<option value='all'>All</option>"+text_source;
+
+
+            document.getElementById("Source").innerHTML = text_source;
+
+
+
+          }
+
+        }
+
+
+
+        var category = document.getElementById('Category').value
+
+        req.open('GET', '/sourceData?category='+category)
+        req.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+        
+        req.send()
+
+
+      }
+
+
+
+      function onClickGoogle(){
+
+      var element = document.getElementById("googleButton");
+      element.className = "toggle";
+
+      var element2 = document.getElementById("searchButton");
+      element2.className = "notSelected";
+
+      document.getElementById("formPage").style.display = "none";
+      document.getElementById("googleNewsPage").style.display = "block";
+      slidingWindowImages();
+      cnnNewsCards();
+      foxNewsCards();      
+
+    }
+
+
+function loadWordCloud() {
+
+    var req = new XMLHttpRequest()
+          req.onreadystatechange = function()
+          {
+            if(req.status==200 && req.readyState == 4 )
+            {
+              var myWords = [];
+  var jsonObj = JSON.parse(req.responseText);
+ console.log(jsonObj);
+
+  		for(var i = 0; i < jsonObj.length; i++){
+  			myWords.push({word:jsonObj[i][0].toString(),size:jsonObj[i][1].toString()});
+  		}
+
+  p_ht = document.getElementById("g1").clientHeight;
+  p_wd = document.getElementById("g1").clientWidth;
+
+  // set the dimensions and margins of the graph
+  var margin = {top: 0, right: 0, bottom: 0, left: 0},
+      width = 350,
+      height = 300;
+
+  // append the svg object to the body of the page
+  var svg = d3.select("#wordImage").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .style("background-color", "#F4F3F4")
+    .append("g")
+      .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+
+  // Constructs a new cloud layout instance. It run an algorithm to find the position of words that suits your requirements
+  // Wordcloud features that are different from one word to the other must be here
+  var layout = d3.layout.cloud()
+    .size([width, height])
+    .words(myWords.map(function(d) { return {text: d.word, size:d.size}; }))
+    .padding(5)        //space between words
+    .rotate(function() { return ~~(Math.random() * 2) * 90; })
+    .fontSize(function(d) { return d.size*10; })      // font size of words
+    .on("end", draw);
+  layout.start();
+
+  // This function takes the output of 'layout' above and draw the words
+  // Wordcloud features that are THE SAME from one word to the other can be here
+  function draw(words)
+  {
+    svg
+      .append("g")
+        .attr("transform", "translate(" + layout.size()[0] / 2 + "," + layout.size()[1] / 2 + ")")
+        .selectAll("text")
+          .data(words)
+        .enter().append("text")
+          .style("font-size", function(d) { return d.size+ "px";; })
+          .style("fill", "#000000")
+          .attr("text-anchor", "middle")
+          .style("font-family", "Impact")
+          .attr("transform", function(d) {
+            return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+          })
+          .text(function(d) { return d.text; });
+  }
+		    }//end of if stmt
+
+    	}//end of request loop
+
+    req.open('GET', '/wordCloud')
+    req.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+    req.send();
+
+}//end of wordCLoud
+
+
+function carousel() {
+ 
+ var i=0;
+ var x=2;
+ var y=9;
+  var imageInSlides = document.getElementsByClassName("mySlides");
+
+  while (i < imageInSlides.length && x<y) {
+    imageInSlides[i].style.display = "none";
+    i++;  
+  }
+
+  counter++;
+  if (counter > imageInSlides.length) {counter = 1}    
+ 
+  imageInSlides[counter-1].style.display = "block";  
+  
+  setTimeout(carousel, 3700);
+}
+
+
+        function slidingWindowImages(){
+
+          var req = new XMLHttpRequest()
+          req.onreadystatechange = function()
+          {
+            if(req.status==200 && req.readyState == 4 )
+            {
+              var jsonObj = JSON.parse(req.responseText);
+
+              var slidingWindowObj = jsonObj.sliding_headlines.articles;
+
+              var sliding_text = "<div class='slideshowContainer'>";
+              var counterSliding =0;
+
+
+
+              for(j=0; j < slidingWindowObj.length && counterSliding<5; j++){
+
+                if(slidingWindowObj[j].url!=null && slidingWindowObj[j].urlToImage!=null && slidingWindowObj[j].url!="null" && slidingWindowObj[j].urlToImage!="null" && slidingWindowObj[j].url!=0 && slidingWindowObj[j].urlToImage!=0 && slidingWindowObj[j].url!=undefined && slidingWindowObj[j].urlToImage!=undefined && slidingWindowObj[j].title!=null && slidingWindowObj[j].description!=null && slidingWindowObj[j].title!="null" && slidingWindowObj[j].description!="null" && slidingWindowObj[j].title!=0 && slidingWindowObj[j].description!=0 && slidingWindowObj[j].title!=undefined && slidingWindowObj[j].description!=undefined){
+                	
+
+                  sliding_text += "<a href='"+ slidingWindowObj[j].url + "'target='_blank'>"+
+                  
+					"<div class='mySlides fade'>"+
+					  
+					  "<img src='"+ slidingWindowObj[j].urlToImage + "' alt='nature' style='height:300px; width: 500px; width:100%' style='width:100%'>"+
+					  "<h5 class='text' style='color:white;font-size: 25px;'>"+slidingWindowObj[j].title+"</h5>"+
+					  "<br><br><p class='text' style='color:white;font-size: 15px;'>"+shortenString(slidingWindowObj[j].description, 120, separator = ' ')+"."+"</p>"+
+					"</div></a>";
+					counterSliding++;
+
+                }
+              }
+              sliding_text+="</div>";
+              counter = 0;
+
+
+              document.getElementById("carouselImage").innerHTML = sliding_text;
+              carousel();
+
+
+}//end of if stmt
+
+
+    }//end of request loop
+
+    req.open('GET', '/slidingWindow')
+    req.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+    req.send();
+
+  }
+
+
+
+      function cnnNewsCards(){
+
+        var req = new XMLHttpRequest()
+        req.onreadystatechange = function()
+        {
+          if(req.status==200 && req.readyState == 4 )
+          {
+            var jsonObj = JSON.parse(req.responseText);
+
+            var cnn_articles = jsonObj.top_headlines.articles;
+
+            textCNNnews =
+            "<div class='rowG3Cards' style='float: left;overflow: hidden;margin-left: -23px;'>";
+
+
+            var counterLoop = 0;
+
+            for(j=0;j<cnn_articles.length && counterLoop<4;j++)
+            {   
+	              if(cnn_articles[j].url!=null && cnn_articles[j].urlToImage!=null && cnn_articles[j].title!=null
+	                && cnn_articles[j].description!=null && cnn_articles[j].url!="null" && cnn_articles[j].urlToImage!="null" && cnn_articles[j].title!="null"
+	                && cnn_articles[j].description!="null" && cnn_articles[j].url!=0 && cnn_articles[j].urlToImage!=0 && cnn_articles[j].title!=0
+	                && cnn_articles[j].description!=0 && cnn_articles[j].url!=undefined && cnn_articles[j].urlToImage!=undefined && cnn_articles[j].title!=undefined
+	                && cnn_articles[j].description!=undefined)
+	              {
+	                if(j==0){
+	                  textCNNnews+="<a href='"+ cnn_articles[j].url + "'target='_blank'><div class='columnG3Cards' style='float: left;' >"+
+	                  "<div class='cardG3Cards' style='width:175px; height:360px;margin-left: 5px;border-radius:6px;border: solid gray 1px;'>";
+
+	                }
+	                else{
+	                 textCNNnews+= "<a href='"+ cnn_articles[j].url + "'target='_blank'><div class='columnG3Cards' style='margin-left: -14px;'>"+
+	                 "<div class='cardG3Cards' style='width:175px;height:360px;margin-left: 5px;border: solid gray 1px;border-radius:6px;'>";                      
+	               }
+	               textCNNnews+= "<img src='"+ cnn_articles[j].urlToImage+"' alt='nature' style='height:120px;width: 205px;object-fit:cover;margin-left: -15px;margin-top: -14px;border-radius: 4px;'>";
+
+	               textCNNnews+="<h5 style='color:black;'>"+cnn_articles[j].title+"</h5>";
+
+	               textCNNnews+="<p style='font-size:10px;color:black;font-size:12px;'>"+cnn_articles[j].description+"</p>";
+	               textCNNnews+= "</div>"+
+	               "</div>";
+	               counterLoop++;
+	             }
+                                          
+            }//end of for loop
+
+                                      textCNNnews+=  "</div></a>";
+
+                                      document.getElementById("g3").innerHTML = textCNNnews;
+
+
+          }//end of if stmt
+
+
+        }//end of request loop
+
+        req.open('GET', '/cnnCards')
+        req.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+        req.send();
+
+      }
+
+
+      function foxNewsCards(){
+
+        var req = new XMLHttpRequest()
+        req.onreadystatechange = function()
+        {
+          if(req.status==200 && req.readyState == 4 )
+          {
+            var jsonObj = JSON.parse(req.responseText);
+
+            var fox_articles = jsonObj.top_headlines.articles;
+
+
+            textFoxNews = "<div class='rowG3Cards' style='float: left;overflow: hidden;margin-left: 13px;'>";
+
+
+            var counterFox = 0;
+
+            for(j=0;j<fox_articles.length && counterFox<4;j++)
+            {
+		              if(fox_articles[j].url!=null && fox_articles[j].urlToImage!=null && fox_articles[j].title!=null
+	                && fox_articles[j].description!=null && fox_articles[j].url!="null" && fox_articles[j].urlToImage!="null" && fox_articles[j].title!="null"
+	                && fox_articles[j].description!="null" && fox_articles[j].url!=0 && fox_articles[j].urlToImage!=0 && fox_articles[j].title!=0
+	                && fox_articles[j].description!=0 && fox_articles[j].url!=undefined && fox_articles[j].urlToImage!=undefined && fox_articles[j].title!=undefined
+	                && fox_articles[j].description!=undefined)
+	              {
+	                if(j==0){
+	                  textFoxNews+="<a href='"+ fox_articles[j].url + "'target='_blank'><div class='columnG3Cards' style='float: left;margin-left: 20px;' >"+
+	                  "<div class='cardG3Cards' style='width:175px; height:360px;margin-left: 5px;border-radius:6px;border: solid gray 1px;'>";
+
+	                }
+	                else{
+	                 textFoxNews+= "<a href='"+ fox_articles[j].url + "'target='_blank'><div class='columnG3Cards' style='margin-left: 21px;'>"+
+	                 "<div class='cardG3Cards' style='width:175px;height:360px;margin-left: -30px;border: solid gray 1px;border-radius:6px;'>";                      
+	               }
+	               textFoxNews+= "<img src='"+ fox_articles[j].urlToImage+"' alt='nature' style='height:120px;width: 205px;object-fit:cover;margin-left: -15px;margin-top: -14px;border-radius: 4px;'>";
+
+	               textFoxNews+="<h5 style='color:black;'>"+fox_articles[j].title+"</h5>";
+
+	               textFoxNews+="<p style='font-size:10px;color:black;font-size:12px;'>"+fox_articles[j].description+"</p>";
+	               textFoxNews+= "</div>"+
+	               "</div>";
+	               counterFox++;
+	             }
+
+		    }//end of for loop  
+
+
+                                      textFoxNews+=  "</div></a>";
+
+
+                                      document.getElementById("g5").innerHTML = textFoxNews;
+
+                }//end of if stmt
+
+
+        }//end of request loop
+
+        req.open('GET', '/foxCards')
+        req.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+        req.send();
+} // end of foxNewsCards function
+
+
+function onClickSearch(){
+
+     var element = document.getElementById("searchButton");
+      element.className = "toggle";
+
+      var element2 = document.getElementById("googleButton");
+      element2.className = "notSelected";
+
+  document.getElementById("googleNewsPage").style.display = "none";
+  document.getElementById("formPage").style.display = "block";
+  fromDefault();
+  toDefault();
+
+  sourceData();
+
+}
+
+
+function clearData() {
+  document.getElementById("myForm").reset();
+  document.getElementById('Keyword').value = "";
+  document.getElementById("searchResults").style.display="none";
+  fromDefault();
+  toDefault();
+  
+  let category = document.getElementById("Category");
+  category.value = "all";
+  sourceData();
+}
+
+function checkDate() {
+ var selectedFrom = document.getElementById('From').value;
+ var selectedFromDate = new Date(selectedFrom);
+
+ var selectedTo = document.getElementById('To').value;
+ var selectedToDate = new Date(selectedTo);
+
+
+ if (selectedFromDate > selectedToDate) {
+  window.alert("Incorrect time");
+  fromDefault();
+  toDefault();
+}
+}
+
+</script>
+</body>
+</html>
